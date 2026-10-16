@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { strToU8, zipSync } from "fflate";
 import { useAttendanceStore } from "@/store/attendanceStore";
 import { useEffectsStore } from "@/store/effectsStore";
+import { usePortalStore } from "@/store/portalStore";
 import {
   BackupPasswordRequiredError,
   buildBackupPayload,
@@ -11,7 +12,7 @@ import {
   type BackupModuleKey,
 } from "@/backup/backupService";
 
-const ALL: BackupModuleKey[] = ["employees", "punches", "attendanceRecords", "rules", "leaves", "adjustments", "officialHolidays", "effects", "config"];
+const ALL: BackupModuleKey[] = ["employees", "punches", "attendanceRecords", "rules", "leaves", "adjustments", "officialHolidays", "effects", "portal", "config"];
 const s = () => useAttendanceStore.getState();
 
 const reset = () => {
@@ -33,7 +34,7 @@ const seed = async () => {
   await s().processAttendance({ startDate: "2026-07-13", endDate: "2026-07-13" });
 };
 
-const payloadNow = () => buildBackupPayload({ state: s().getSnapshot(), effects: useEffectsStore.getState().effects, selectedModules: ALL });
+const payloadNow = () => buildBackupPayload({ state: s().getSnapshot(), effects: useEffectsStore.getState().effects, portal: usePortalStore.getState().snapshot(), selectedModules: ALL });
 
 describe("backup round trip", () => {
   beforeEach(reset);
@@ -53,6 +54,20 @@ describe("backup round trip", () => {
     expect(s().attendanceRecords[0].checkIn?.getTime()).toBe(original.records[0].checkIn?.getTime());
     expect(useEffectsStore.getState().effects).toEqual(original.effects);
     expect(s().officialHolidays).toHaveLength(1);
+  });
+
+  it("round-trips portal data (requests, payroll…) and merges without duplicates", async () => {
+    usePortalStore.getState().reset();
+    usePortalStore.getState().upsert("announcements", { id: "a1", title: "إعلان", body: "نص", createdAt: "x" });
+    usePortalStore.getState().upsert("requests", { id: "r1", code: "REQ-001", employeeCode: "1", type: "mission", date: "2026-03-02", status: "pending", source: "employee", chain: [], comments: [], createdAt: "x", updatedAt: "x" });
+    usePortalStore.getState().nextRequestCode();
+    const payload = await readBackupFile(await createBackupBlob(payloadNow()));
+    usePortalStore.getState().reset();
+    await restoreBackup(payload, { mode: "replace", modules: ["portal"] });
+    expect(usePortalStore.getState().announcements).toHaveLength(1);
+    expect(usePortalStore.getState().counters.request).toBe(1);
+    await restoreBackup(payload, { mode: "merge", modules: ["portal"] });
+    expect(usePortalStore.getState().requests).toHaveLength(1);
   });
 
   it("encrypts with a password and refuses a wrong/missing one", async () => {

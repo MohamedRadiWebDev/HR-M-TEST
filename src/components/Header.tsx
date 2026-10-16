@@ -1,7 +1,10 @@
-import { Laptop, Moon, Search, Sun, User } from "lucide-react";
+'use client';
+
+import { Laptop, Moon, Search, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
+import { ViewAsSwitcher } from "@/components/ViewAsSwitcher";
 import { getSavedTheme, setSavedTheme, type ThemeMode } from "@/lib/theme";
 
 export function Header({ title }: { title: string }) {
@@ -52,14 +55,8 @@ export function Header({ title }: { title: string }) {
           </Button>
         </div>
         <div className="flex items-center gap-3 border-r border-border/50 pr-4 mr-1">
-          <div className="text-left hidden sm:block">
-            <p className="text-sm font-semibold">مدير النظام</p>
-            <p className="text-xs text-muted-foreground">Admin</p>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-blue-600 flex items-center justify-center text-white font-bold shadow-lg shadow-primary/20">
-            <User className="w-5 h-5" />
-          </div>
-        </div>
+          <ViewAsSwitcher />
+</div>
       </div>
 
       <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
