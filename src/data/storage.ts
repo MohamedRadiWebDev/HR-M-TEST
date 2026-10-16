@@ -22,6 +22,8 @@ export interface StorageAdapter {
   loadPreRestoreSnapshot: typeof local.loadPreRestoreSnapshot;
   exportRawBackup: typeof local.exportIncompatibleBackup;
   requestPersistence: typeof local.requestPersistentStorage;
+  loadPortal: typeof local.loadPortal;
+  savePortal: typeof local.savePortal;
   lastSavedAt: typeof local.getLastSavedAt;
   removeLegacy: typeof local.removeLegacyStorage;
 }
@@ -35,6 +37,8 @@ export const indexedDbStorage: StorageAdapter = {
   loadPreRestoreSnapshot: local.loadPreRestoreSnapshot,
   exportRawBackup: local.exportIncompatibleBackup,
   requestPersistence: local.requestPersistentStorage,
+  loadPortal: local.loadPortal,
+  savePortal: local.savePortal,
   lastSavedAt: local.getLastSavedAt,
   removeLegacy: local.removeLegacyStorage,
 };
