@@ -1,0 +1,16 @@
+node_modules
+dist
+.DS_Store
+*.tgz
+*.tar.gz
+*.log
+.env*
+.cache
+# Real employee / punch exports must never be committed (they contain personal data)
+attached_assets/
+*.xlsx
+!client/src/**/fixtures/**
+backups/
+.next/
+out/
+next-env.d.ts
