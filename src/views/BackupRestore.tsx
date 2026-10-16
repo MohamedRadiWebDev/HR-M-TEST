@@ -20,7 +20,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { applySnapshot, useAttendanceStore } from "@/store/attendanceStore";
 import { useEffectsStore } from "@/store/effectsStore";
-import { COLLECTION_KEYS, usePortalStore } from "@/store/portalStore";
 import { storage } from "@/data/storage";
 import { downloadBlob } from "@/lib/excel";
 import {
@@ -51,7 +50,6 @@ export default function BackupRestore() {
   const adjustments = useAttendanceStore((s) => s.adjustments);
   const officialHolidays = useAttendanceStore((s) => s.officialHolidays);
   const effects = useEffectsStore((s) => s.effects);
-  const portal = usePortalStore();
   const config = useAttendanceStore((s) => s.config);
   const setConfig = useAttendanceStore((s) => s.setConfig);
 
@@ -75,10 +73,9 @@ export default function BackupRestore() {
       adjustments: adjustments.length,
       officialHolidays: officialHolidays.length,
       effects: effects.length,
-      portal: COLLECTION_KEYS.reduce((n, key) => n + portal[key].length, 0),
       config: 1,
     }),
-    [employees, punches, attendanceRecords, rules, leaves, adjustments, officialHolidays, effects, portal]
+    [employees, punches, attendanceRecords, rules, leaves, adjustments, officialHolidays, effects]
   );
 
   const fail = (title: string, error: unknown) =>
@@ -92,7 +89,6 @@ export default function BackupRestore() {
       const payload = buildBackupPayload({
         state: useAttendanceStore.getState().getSnapshot(),
         effects: useEffectsStore.getState().effects,
-        portal: usePortalStore.getState().snapshot(),
         selectedModules: modules,
       });
       const password = exportPassword.trim() || undefined;

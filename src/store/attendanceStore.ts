@@ -27,7 +27,6 @@ import { DEFAULT_PAYROLL_START_DAY } from "@shared/payroll-period";
 import { parsePunchWallClock } from "@shared/punch-parser";
 import { useEffectsStore } from "@/store/effectsStore";
 import { useEffectsHistoryStore } from "@/store/effectsHistoryStore";
-import { usePortalStore } from "@/store/portalStore";
 import { storage, type PersistedSnapshot } from "@/data/storage";
 
 const blankToNull = (value: unknown) => {
@@ -543,7 +542,6 @@ export const useAttendanceStore = create<AttendanceStoreState>((set, get) => ({
     await storage.clear();
     useEffectsStore.getState().replaceEffects([]);
     useEffectsHistoryStore.getState().clear();
-    usePortalStore.getState().reset();
     set({ ...createInitialState() });
   },
 

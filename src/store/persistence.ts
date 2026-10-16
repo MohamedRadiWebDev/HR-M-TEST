@@ -321,26 +321,3 @@ export const loadPreRestoreSnapshot = async (): Promise<{ createdAt: string; sna
     return null;
   }
 };
-
-// ---------------------------------------------------------------------------------------------
-// Portal data (requests, payroll, custody, …) – one blob so it can be saved independently of attendance
-// ---------------------------------------------------------------------------------------------
-export const savePortal = async (data: unknown) => {
-  try {
-    await withStore("readwrite", (store) => {
-      store.put(data, "portal");
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "فشل حفظ بيانات البوابة";
-    window.dispatchEvent(new CustomEvent(PERSISTENCE_ERROR_EVENT, { detail: { message } }));
-    throw error;
-  }
-};
-
-export const loadPortal = async (): Promise<unknown | null> => {
-  try {
-    return (await getAll(["portal"])).portal ?? null;
-  } catch {
-    return null;
-  }
-};

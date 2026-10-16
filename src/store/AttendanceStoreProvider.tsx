@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { applySnapshot, buildSnapshot, useAttendanceStore } from "@/store/attendanceStore";
 import { useEffectsStore } from "@/store/effectsStore";
 import { storage } from "@/data/storage";
-import { usePortalStore, type PortalData } from "@/store/portalStore";
 import { usePersistenceStatus } from "@/store/persistenceStatus";
 
 const PERSIST_DEBOUNCE_MS = 600;
@@ -18,12 +17,6 @@ export function AttendanceStoreProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       const result = await storage.load();
-      if (cancelled) return;
-
-      if (result.status === "ok" || result.status === "none") {
-        const portal = (await storage.loadPortal()) as Partial<PortalData> | null;
-        if (portal && !cancelled) usePortalStore.getState().replaceAll(portal);
-      }
       if (cancelled) return;
 
       if (result.status === "ok") {
@@ -61,31 +54,16 @@ export function AttendanceStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | null = null;
     let dirty = false;
-    let portalDirty = false;
 
     const flush = () => {
       if (timer) clearTimeout(timer);
       timer = null;
-      if (!writesEnabled.current) return;
-      if (portalDirty) {
-        portalDirty = false;
-        void storage.savePortal(usePortalStore.getState().snapshot()).catch(() => {
-          portalDirty = true;
-        });
-      }
-      if (!dirty) return;
+      if (!dirty || !writesEnabled.current) return;
       dirty = false;
       const snapshot = buildSnapshot();
       void storage.save(snapshot, { autoBackup: snapshot.state.config.autoBackupEnabled }).catch(() => {
         dirty = true; // retry on next change
       });
-    };
-
-    const schedulePortal = () => {
-      if (!writesEnabled.current) return;
-      portalDirty = true;
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(flush, PERSIST_DEBOUNCE_MS);
     };
 
     const schedule = () => {
@@ -97,7 +75,6 @@ export function AttendanceStoreProvider({ children }: { children: ReactNode }) {
 
     const unsubAttendance = useAttendanceStore.subscribe(schedule);
     const unsubEffects = useEffectsStore.subscribe(schedule);
-    const unsubPortal = usePortalStore.subscribe(schedulePortal);
     const onHide = () => {
       if (document.visibilityState === "hidden") flush();
     };
@@ -108,7 +85,6 @@ export function AttendanceStoreProvider({ children }: { children: ReactNode }) {
       flush();
       unsubAttendance();
       unsubEffects();
-      unsubPortal();
       document.removeEventListener("visibilitychange", onHide);
       window.removeEventListener("pagehide", flush);
     };

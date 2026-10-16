@@ -1,10 +1,5 @@
 # Changelog
 
-## 3.1.0
-- **Employee portal + HR side (local):** requests with approval chain (manager → manager's manager → HR) that turn into attendance effects on final approval; leave balances; overtime detected from punches as approval requests; payroll (salary profiles, payslips, loans with instalment schedule, bonuses, deductions with objection flow); custody; documents; announcements + occasions; surveys (optionally anonymous); notifications; calendar; "view as" switcher.
-- New `usePortalStore` persisted through `src/data/storage.ts`, included in backups ("portal" module).
-- 25 new tests covering approvals, request→effects, balances, overtime, payroll, loans, deductions and portal backup.
-
 ## 3.0.0
 - **Migrated from Vite to Next.js 16 (App Router, static export) on React 19.** No server and no database: everything stays local. Source moved from `client/src` to `src` (`views/` = screens, `app/` = routes).
 - Dropped `wouter` (navigation via `@/lib/nav`), `react-day-picker` (unused) and every server/Docker file added in 2.1.

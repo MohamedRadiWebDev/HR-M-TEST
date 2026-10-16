@@ -21,7 +21,6 @@ import type { Effect } from "@/store/effectsStore";
 import { useAttendanceStore, type AttendanceState } from "@/store/attendanceStore";
 import { useEffectsStore } from "@/store/effectsStore";
 import { useEffectsHistoryStore } from "@/store/effectsHistoryStore";
-import { COLLECTION_KEYS, emptyPortalData, usePortalStore, type PortalData } from "@/store/portalStore";
 import { storage } from "@/data/storage";
 
 export const BACKUP_SCHEMA_VERSION = 2;
@@ -36,7 +35,6 @@ export type BackupModuleKey =
   | "adjustments"
   | "officialHolidays"
   | "effects"
-  | "portal"
   | "config";
 
 export const BACKUP_MODULES: { key: BackupModuleKey; label: string }[] = [
@@ -48,7 +46,6 @@ export const BACKUP_MODULES: { key: BackupModuleKey; label: string }[] = [
   { key: "adjustments", label: "التسويات" },
   { key: "officialHolidays", label: "الإجازات الرسمية" },
   { key: "effects", label: "المؤثرات" },
-  { key: "portal", label: "بوابة الموظف (الطلبات، الرواتب، العهد…)" },
   { key: "config", label: "الإعدادات" },
 ];
 
@@ -76,7 +73,6 @@ export type BackupPayload = {
     adjustments?: Adjustment[];
     officialHolidays?: OfficialHoliday[];
     effects?: Effect[];
-    portal?: PortalData;
     config?: AttendanceState["config"];
   };
 };
@@ -87,7 +83,6 @@ export type BackupPayload = {
 export const buildBackupPayload = (params: {
   state: AttendanceState;
   effects?: Effect[];
-  portal?: PortalData;
   selectedModules: BackupModuleKey[];
 }): BackupPayload => {
   const { state, selectedModules } = params;
@@ -110,7 +105,6 @@ export const buildBackupPayload = (params: {
   if (has("adjustments")) modules.adjustments = state.adjustments;
   if (has("officialHolidays")) modules.officialHolidays = state.officialHolidays;
   if (has("effects")) modules.effects = params.effects ?? [];
-  if (has("portal")) modules.portal = params.portal ?? emptyPortalData();
   if (has("config")) modules.config = state.config;
 
   const recordCounts: Record<string, number> = {};
@@ -224,7 +218,6 @@ const modulesSchemas: Record<BackupModuleKey, z.ZodTypeAny> = {
   adjustments: lenientArray(adjustmentSchema.passthrough()),
   officialHolidays: lenientArray(officialHolidaySchema),
   effects: lenientArray(z.object({ employeeCode: z.string(), date: z.string(), type: z.string() }).passthrough()),
-  portal: z.object({}).passthrough(),
   config: z.object({}).passthrough(),
 };
 
@@ -387,21 +380,6 @@ export const restoreBackup = async (payload: BackupPayload, options: RestoreOpti
     }
     useEffectsHistoryStore.getState().clear();
     summary.effects = rows.length;
-  }
-  if (wants("portal")) {
-    const incoming = payload.modules.portal!;
-    if (replace) usePortalStore.getState().replaceAll(incoming);
-    else {
-      const current = usePortalStore.getState().snapshot();
-      const merged: Partial<PortalData> = { settings: current.settings, counters: { request: Math.max(current.counters.request, incoming.counters?.request ?? 0) } };
-      COLLECTION_KEYS.forEach((key) => {
-        const have = current[key] as Array<{ id: string }>;
-        const known = new Set(have.map((r) => r.id));
-        (merged as Record<string, unknown>)[key] = have.concat(((incoming[key] ?? []) as Array<{ id: string }>).filter((r) => !known.has(r.id)));
-      });
-      usePortalStore.getState().replaceAll(merged);
-    }
-    summary.portal = COLLECTION_KEYS.reduce((n, key) => n + ((incoming[key] ?? []) as unknown[]).length, 0);
   }
   if (wants("config")) {
     store.setConfig({ ...useAttendanceStore.getState().config, ...payload.modules.config! });
